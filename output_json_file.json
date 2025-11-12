@@ -1,38 +1,38 @@
 {
-  "sample_id": "zebra_to_cow",
-  "instruction": "将底部的斑马改为牛。",
-  "reasoning_chain": "存在斑马 → 需要替换斑马 → 替换为牛",
+  "sample_id": "zebra_to_cow_counterfactual",
+  "instruction": "If the zebra at the bottom was replaced by a cow, what would the scene look like?",
+  "reasoning_chain": "The zebra at the bottom is identified → If it were replaced by a cow → The cow's features and appearance would replace those of the zebra → The scene would now feature a cow instead of a zebra.",
   "counterfactual_premise": {
-    "changed_factor": "斑马",
-    "original_state": "斑马在草地上行走",
-    "counterfactual_state": "牛在草地上行走",
-    "causal_effect": "场景从有斑马变为有牛"
+    "changed_factor": "animal at the bottom",
+    "original_state": "a zebra with black and white stripes walking on grass",
+    "counterfactual_state": "a cow with brown and white patches standing on grass",
+    "causal_effect": "The zebra's features and behavior are replaced by those of a cow."
   },
   "multi_modal_constraints": [
     {
       "type": "spatial_layout",
-      "description": "斑马位于图像底部，牛替换后也位于底部。"
+      "description": "The cow would occupy the same position as the zebra, maintaining the same spatial layout within the field."
     },
     {
       "type": "semantic_content",
-      "description": "斑马被替换为牛，动物类别发生变化。"
+      "description": "The cow would have a different color pattern (brown and white patches) compared to the zebra's black and white stripes, and it would belong to a different species."
     },
     {
       "type": "physical_causal",
-      "description": "没有物理上的因果关系，只是视觉上的替换。"
+      "description": "The cow's physical characteristics, such as size and shape, would differ from the zebra's, affecting the visual perception of the scene."
     },
     {
       "type": "temporal_reasoning",
-      "description": "没有时间上的变化，仅是静态图像中的对象替换。"
+      "description": "The scene would not change temporally; the counterfactual is about a hypothetical replacement, not a time-based event."
     }
   ],
   "edit_subject": [
-    "斑马"
+    "the zebra at the bottom"
   ],
   "new_subject": [
-    "牛"
+    "a cow with brown and white patches"
   ],
   "edit_type": "object_replacement",
-  "editing_instruction": "将底部的斑马替换为牛",
-  "raw_response": "```json\n{\n    \"sample_id\": \"zebra_to_cow\",\n    \"instruction\": \"将底部的斑马改为牛。\",\n    \"reasoning_chain\": \"存在斑马 → 需要替换斑马 → 替换为牛\",\n    \"counterfactual_premise\": {\n        \"changed_factor\": \"斑马\",\n        \"original_state\": \"斑马在草地上行走\",\n        \"counterfactual_state\": \"牛在草地上行走\",\n        \"causal_effect\": \"场景从有斑马变为有牛\"\n    },\n    \"multi_modal_constraints\": [\n        {\n            \"type\": \"spatial_layout\",\n            \"description\": \"斑马位于图像底部，牛替换后也位于底部。\"\n        },\n        {\n            \"type\": \"semantic_content\",\n            \"description\": \"斑马被替换为牛，动物类别发生变化。\"\n        },\n        {\n            \"type\": \"physical_causal\",\n            \"description\": \"没有物理上的因果关系，只是视觉上的替换。\"\n        },\n        {\n            \"type\": \"temporal_reasoning\",\n            \"description\": \"没有时间上的变化，仅是静态图像中的对象替换。\"\n        }\n    ],\n    \"edit_subject\": [\"斑马\"],\n    \"new_subject\": [\"牛\"],\n    \"edit_type\": \"object_replacement\",\n    \"editing_instruction\": \"将底部的斑马替换为牛\"\n}\n```"
+  "editing_instruction": "replace the zebra at the bottom with a cow",
+  "raw_response": "```json\n{\n    \"sample_id\": \"zebra_to_cow_counterfactual\",\n    \"instruction\": \"If the zebra at the bottom was replaced by a cow, what would the scene look like?\",\n    \"reasoning_chain\": \"The zebra at the bottom is identified → If it were replaced by a cow → The cow's features and appearance would replace those of the zebra → The scene would now feature a cow instead of a zebra.\",\n    \"counterfactual_premise\": {\n        \"changed_factor\": \"animal at the bottom\",\n        \"original_state\": \"a zebra with black and white stripes walking on grass\",\n        \"counterfactual_state\": \"a cow with brown and white patches standing on grass\",\n        \"causal_effect\": \"The zebra's features and behavior are replaced by those of a cow.\"\n    },\n    \"multi_modal_constraints\": [\n        {\n            \"type\": \"spatial_layout\",\n            \"description\": \"The cow would occupy the same position as the zebra, maintaining the same spatial layout within the field.\"\n        },\n        {\n            \"type\": \"semantic_content\",\n            \"description\": \"The cow would have a different color pattern (brown and white patches) compared to the zebra's black and white stripes, and it would belong to a different species.\"\n        },\n        {\n            \"type\": \"physical_causal\",\n            \"description\": \"The cow's physical characteristics, such as size and shape, would differ from the zebra's, affecting the visual perception of the scene.\"\n        },\n        {\n            \"type\": \"temporal_reasoning\",\n            \"description\": \"The scene would not change temporally; the counterfactual is about a hypothetical replacement, not a time-based event.\"\n        }\n    ],\n    \"edit_subject\": [\"the zebra at the bottom\"],\n    \"new_subject\": [\"a cow with brown and white patches\"],\n    \"edit_type\": \"object_replacement\",\n    \"editing_instruction\": \"replace the zebra at the bottom with a cow\"\n}\n```"
 }

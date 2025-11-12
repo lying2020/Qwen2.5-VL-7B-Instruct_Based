@@ -91,7 +91,7 @@ Please output strict JSON format with the following fields:
 }}
 
 Requirements:
-1. instruction should describe the task in a counterfactual manner, clearly describe the editing task, use concise and clear language, avoid complex sentence structures
+1. instruction MUST be written in a counterfactual if-else style, using conditional statements like "If...what would...?" or "If...instead of..., what would...?". Examples: "If this photo was taken when the animal at the bottom was actually a cow, what would the scene look like?" or "If this scene happened in a cattle farm instead of a wildlife park, what would the animal at the bottom be?". The instruction should clearly describe the counterfactual scenario and the expected change.
 2. reasoning_chain should reflect clear causal logic
 3. multi_modal_constraints should cover spatial, semantic, physical, and temporal aspects (spatial_layout, semantic_content, physical_causal, temporal_reasoning)
 4. edit_subject and new_subject should be specific and clear, editing objects and new objects should be specific and clear
@@ -589,6 +589,7 @@ def main():
     # Initialize generator
     generator = ImageEditPromptGenerator()
 
+    args.input_json_path = None
     if args.input_json_path:
         # Batch processing
         print(f"Batch processing from JSON file: {args.input_json_path}")
