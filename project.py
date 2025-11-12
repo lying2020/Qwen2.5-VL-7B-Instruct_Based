@@ -31,6 +31,9 @@ QWEN2_5_VL_7B_INSTUCT_MODEL_PATH = "/home/liying/Documents/Qwen2.5-VL-7B-Instruc
 
 HALLUSEGBENCH_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/HalluSegBench/HalluSegBench"
 
+PROMPTS_OUTPUT_DIR = os.path.join(HALLUSEGBENCH_DATASET_PATH, "prompts_output")
+os.makedirs(PROMPTS_OUTPUT_DIR, exist_ok=True)
+
 # dataset path
 CHECKPOINTS_DIR = os.path.join(current_dir, "checkpoints")
 os.makedirs(CHECKPOINTS_DIR, exist_ok=True)
@@ -38,6 +41,3 @@ os.makedirs(CHECKPOINTS_DIR, exist_ok=True)
 # result path
 OUTPUT_DIR = os.path.join(current_dir, "output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-EDITING_RESULTS_DIR = os.path.join(OUTPUT_DIR, "editing_results")
-os.makedirs(EDITING_RESULTS_DIR, exist_ok=True)
