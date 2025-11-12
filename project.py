@@ -31,7 +31,7 @@ QWEN2_5_VL_7B_INSTUCT_MODEL_PATH = "/home/liying/Documents/Qwen2.5-VL-7B-Instruc
 
 HALLUSEGBENCH_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/HalluSegBench/HalluSegBench"
 
-PROMPTS_OUTPUT_DIR = os.path.join(HALLUSEGBENCH_DATASET_PATH, "prompts_output")
+PROMPTS_OUTPUT_DIR = os.path.join(HALLUSEGBENCH_DATASET_PATH, "prompts_output_new")
 os.makedirs(PROMPTS_OUTPUT_DIR, exist_ok=True)
 
 # dataset path

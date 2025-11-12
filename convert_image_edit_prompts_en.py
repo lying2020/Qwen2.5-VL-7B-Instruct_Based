@@ -381,6 +381,7 @@ class ImageEditPromptGenerator:
 
         for idx, data_item in enumerate(tqdm(image_data_list, desc="Processing images")):
             try:
+                if idx < 880: continue
                 # Extract information from dictionary
                 sample_id = data_item.get('sample_id', f'sample_{idx:05d}')
                 image_path = data_item.get('image_path') or data_item.get('image')
@@ -589,7 +590,7 @@ def main():
     # Initialize generator
     generator = ImageEditPromptGenerator()
 
-    args.input_json_path = None
+    # args.input_json_path = None
     if args.input_json_path:
         # Batch processing
         print(f"Batch processing from JSON file: {args.input_json_path}")
