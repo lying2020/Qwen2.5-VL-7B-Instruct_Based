@@ -1,7 +1,11 @@
 {
   "sample_id": "自动生成的唯一ID，如：cf_urban_001",
   "instruction": "原始反事实指令",
-  "reasoning_chain": "因果推理链条，用→连接步骤",
+  "reasoning_chains": {
+    "descriptive": "描述性推理链条：识别→分析→转换→验证",
+    "causal": "因果推理链条：前提→干预→效应→结果",
+    "comparative": "对比推理链条：原始分析→目标分析→差异识别→转换策略"
+  },
   "counterfactual_premise": {
     "changed_factor": "被改变的关键因素",
     "original_state": "原始状态描述",
@@ -11,23 +15,26 @@
   "multi_modal_constraints": [
     {
       "type": "spatial_layout",
-      "description": "空间布局约束：对象的位置、大小、方向、相对位置关系、遮挡关系、透视关系等"
+      "description": "空间布局约束：位置、大小、方向、相对关系、遮挡、透视"
     },
     {
       "type": "semantic_content",
-      "description": "语义内容约束：对象类别、颜色、材料等属性、替换关系、语义一致性"
+      "description": "语义内容约束：类别、属性、替换关系、语义一致性"
     },
     {
       "type": "physical_causal",
-      "description": "物理因果约束：物理规律，力学关系，因果关系，重力作用，材料属性等"
+      "description": "物理因果约束：物理规律、力学关系、因果关系、材料属性"
     },
     {
       "type": "temporal_reasoning",
-      "description": "时间推理约束：时间变化、年龄、季节、历史演变、发展过程"
+      "description": "时间推理约束：时间变化、年龄、季节、历史演变"
     }
   ],
-  "edit_subject": ["被编辑的对象列表"],
-  "new_subject": ["新的对象列表"],
-  "edit_type": "编辑类型，如：object_replacement, addition, removal, modification",
-  "editing_instruction": "详细描述的编辑命令，直接的编辑命令，适合inpainting模型理解"
+  "edit_metadata": {
+    "edit_subject": ["被编辑的对象列表"],
+    "new_subject": ["新的对象列表"],
+    "edit_type": "object_replacement|addition|removal|modification|temporal_evolution",
+    "complexity_level": "simple|medium|complex"
+  },
+  "editing_instruction": "直接、明确的编辑命令，适合inpainting模型理解"
 }

@@ -30,9 +30,14 @@ STABLE_DIFFUSION_V1_5_MODEL_PATH = "/home/liying/Documents/stable-diffusion-v1-5
 QWEN2_5_VL_7B_INSTUCT_MODEL_PATH = "/home/liying/Documents/Qwen2.5-VL-7B-Instruct"
 
 HALLUSEGBENCH_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/HalluSegBench/HalluSegBench"
-
 PROMPTS_OUTPUT_DIR = os.path.join(HALLUSEGBENCH_DATASET_PATH, "prompts_output_new")
 os.makedirs(PROMPTS_OUTPUT_DIR, exist_ok=True)
+
+
+HALLUSEGGOOD_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/dataset/HalluSegGood"
+PROMPTS_OUTPUT_HALLUSEGGOOD_DIR = os.path.join(HALLUSEGGOOD_DATASET_PATH, "prompts_output")
+os.makedirs(PROMPTS_OUTPUT_HALLUSEGGOOD_DIR, exist_ok=True)
+
 
 # dataset path
 CHECKPOINTS_DIR = os.path.join(current_dir, "checkpoints")

@@ -381,7 +381,6 @@ class ImageEditPromptGenerator:
 
         for idx, data_item in enumerate(tqdm(image_data_list, desc="Processing images")):
             try:
-                if idx < 880: continue
                 # Extract information from dictionary
                 sample_id = data_item.get('sample_id', f'sample_{idx:05d}')
                 image_path = data_item.get('image_path') or data_item.get('image')
@@ -566,15 +565,16 @@ def main():
     counterfactual_images_paths = [os.path.join(counterfactual_images_dir, image) for image in counterfactual_images]
     # counterfactual_images = [Image.open(image_path) for image_path in counterfactual_images_paths]
 
-    converted_data_json = os.path.join(images_dir, "converted_data.json")
-    with open(converted_data_json, 'r', encoding='utf-8') as f:
-        converted_data = json.load(f)
+    # converted_data_json = os.path.join(prj.HALLUSEGBENCH_DATASET_PATH, "converted_data.json")
+    # prompts_output_dir = prj.PROMPTS_OUTPUT_DIR
+    converted_data_json = os.path.join(prj.HALLUSEGGOOD_DATASET_PATH, "halluseggood_data.json")
+    prompts_output_dir = prj.PROMPTS_OUTPUT_HALLUSEGGOOD_DIR
 
     parser = argparse.ArgumentParser(description='Generate image editing prompts')
 
     parser.add_argument('--input_image_path', type=str, default=images_dir, help='Base directory for images (for relative paths in JSON)')
     parser.add_argument('--input_json_path', type=str, default=converted_data_json, help='JSON file path for batch processing')
-    parser.add_argument('--output_json_path', type=str, default=prj.PROMPTS_OUTPUT_DIR, help='Output directory for individual files')
+    parser.add_argument('--output_json_path', type=str, default=prompts_output_dir, help='Output directory for individual files')
 
     parser.add_argument('--image', type=str, default="factual_images/COCO_train2014_000000000154.jpg", help='Source image path (required)')
     parser.add_argument('--mask', type=str, default=None, help='Source image mask path (optional), white areas indicate parts to be edited')
