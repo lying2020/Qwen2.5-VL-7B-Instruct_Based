@@ -412,6 +412,9 @@ def main():
     counterfactual_images_paths = [os.path.join(counterfactual_images_dir, image) for image in counterfactual_images]
     counterfactual_images = [Image.open(image_path) for image_path in counterfactual_images_paths]
 
+    converted_data_json = os.path.join(images_dir, "converted_data.json")
+    with open(converted_data_json, 'r', encoding='utf-8') as f:
+        converted_data = json.load(f)
 
     parser = argparse.ArgumentParser(description='生成图像编辑提示词')
     parser.add_argument('--image', type=str, default=factual_images[0], help='单张图片路径')
