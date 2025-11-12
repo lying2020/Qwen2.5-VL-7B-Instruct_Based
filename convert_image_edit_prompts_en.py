@@ -7,6 +7,7 @@ Supports single image processing and batch processing
 
 import os
 import json
+import re
 import torch
 import uuid
 from pathlib import Path
@@ -58,8 +59,12 @@ Instruction: "{instruction}"
 Please output strict JSON format with the following fields:
 {{
     "sample_id": "Auto-generated unique ID",
-    "instruction": "Original counterfactual instruction",
-    "reasoning_chain": "Causal reasoning chain, connecting steps with →",
+    "instruction": "Counterfactual instruction rewritten from semantic assumptions/conditional changes, introducing implicit and reasonable causal hypotheses. The instruction should start from semantic assumptions or conditional changes, such as personal situations, needs, constraints, or contextual factors, and naturally lead to the required image editing. Examples: 'I usually live alone and sometimes need to work from home. How should I renovate my bedroom?' or 'My personal doctor says I have been consuming too much sugar and eating unhealthily, and I should supplement with vitamin C. What should I do?'",
+    "reasoning_chains": {{
+        "descriptive": "Descriptive reasoning chain: identify→analyze→transform→verify",
+        "causal": "Causal reasoning chain: premise→intervention→effect→outcome",
+        "comparative": "Comparative reasoning chain: original_analysis→target_analysis→difference_identification→transformation_strategy"
+    }},
     "counterfactual_premise": {{
         "changed_factor": "Key factor that was changed",
         "original_state": "Description of original state",
@@ -84,19 +89,28 @@ Please output strict JSON format with the following fields:
     "description": "Temporal changes, age, seasons, historical evolution"
     }},
     ],
-    "edit_subject": ["List of editing objects"],
-    "new_subject": ["List of new objects"],
-    "edit_type": "Editing type",
+    "edit_metadata": {{
+        "edit_subject": ["List of editing objects"],
+        "new_subject": ["List of new objects"],
+        "edit_type": "Editing type: object_replacement|addition|removal|modification|transformation|combination|deletion|rearrangement|temporal_evolution",
+        "complexity_level": "Complexity level: simple|medium|complex"
+    }},
     "editing_instruction": "Detailed editing command, direct editing command suitable for inpainting model understanding"
 }}
 
 Requirements:
-1. instruction MUST be written in a counterfactual if-else style, using conditional statements like "If...what would...?" or "If...instead of..., what would...?". Examples: "If this photo was taken when the animal at the bottom was actually a cow, what would the scene look like?" or "If this scene happened in a cattle farm instead of a wildlife park, what would the animal at the bottom be?". The instruction should clearly describe the counterfactual scenario and the expected change.
-2. reasoning_chain should reflect clear causal logic
+1. instruction MUST be rewritten from semantic assumptions/conditional changes, introducing implicit and reasonable causal hypotheses. Start from personal situations, needs, constraints, or contextual factors (like lifestyle, health conditions, social situations, environmental requirements, etc.), and naturally lead to the required image editing. The instruction should feel natural and reasonable, not directly stating the editing task. Examples:
+   - "I usually live alone and sometimes need to work from home. How should I renovate my bedroom?" (leads to adding workspace furniture)
+   - "My personal doctor says I have been consuming too much sugar and eating unhealthily, and I should supplement with vitamin C. What should I do?" (leads to replacing unhealthy food with fruits/vegetables)
+   - "I recently joined a new company and want to have a small gathering with new colleagues, but one colleague said they are allergic to alcohol (or taking antibiotics). What should I do?" (leads to replacing alcoholic drinks with non-alcoholic alternatives)
+2. reasoning_chains should contain three types:
+   - descriptive: step-by-step identification and transformation process
+   - causal: causal logic from premise to outcome
+   - comparative: comparison between original and target states
 3. multi_modal_constraints should cover spatial, semantic, physical, and temporal aspects (spatial_layout, semantic_content, physical_causal, temporal_reasoning)
-4. edit_subject and new_subject should be specific and clear, editing objects and new objects should be specific and clear
-5. edit_type should use standard values: "object_replacement", "addition", "removal", "modification", "transformation", "combination", "deletion", "rearrangement", etc.
-6. detailed_instructions should describe editing steps in detail, using step1, step2, step3, ... format
+4. edit_metadata.edit_subject and edit_metadata.new_subject should be specific and clear, editing objects and new objects should be specific and clear
+5. edit_metadata.edit_type should use standard values: "object_replacement", "addition", "removal", "modification", "transformation", "combination", "deletion", "rearrangement", "temporal_evolution"
+6. edit_metadata.complexity_level should be assessed based on the number of objects, spatial relationships, and editing difficulty: "simple", "medium", or "complex"
 7. editing_instruction should be concise and direct, using formats like "replace A with B", "add X", "remove Y"
 
 """
@@ -149,15 +163,13 @@ class ImageEditPromptGenerator:
             max_new_tokens: Maximum number of tokens to generate
 
         Returns:
-            Dictionary containing the following fields (conforming to sample_temple.json format):
+            Dictionary containing the following fields (conforming to sample_temple_en.json format):
             - sample_id: Auto-generated unique ID
-            - instruction: Original counterfactual instruction
-            - reasoning_chain: Causal reasoning chain
+            - instruction: Counterfactual instruction rewritten from semantic assumptions/conditional changes
+            - reasoning_chains: Reasoning chains object (contains descriptive, causal, comparative)
             - counterfactual_premise: Counterfactual premise (contains changed_factor, original_state, counterfactual_state, causal_effect)
             - multi_modal_constraints: Multi-modal constraint list (contains type and description)
-            - edit_subject: List of editing objects
-            - new_subject: List of new objects
-            - edit_type: Editing type
+            - edit_metadata: Edit metadata object (contains edit_subject, new_subject, edit_type, complexity_level)
             - editing_instruction: Detailed editing command
             - raw_response: Raw model response
         """
@@ -280,12 +292,16 @@ class ImageEditPromptGenerator:
             }
 
     def _parse_response(self, response: str, edit_request: str) -> Dict:
-        """Parse model response and extract JSON information (conforming to sample_temple.json format)"""
-        # Initialize result structure, conforming to sample_temple.json format
+        """Parse model response and extract JSON information (conforming to sample_temple_en.json format)"""
+        # Initialize result structure, conforming to sample_temple_en.json format
         result = {
             'sample_id': '',
             'instruction': '',
-            'reasoning_chain': '',
+            'reasoning_chains': {
+                'descriptive': '',
+                'causal': '',
+                'comparative': ''
+            },
             'counterfactual_premise': {
                 'changed_factor': '',
                 'original_state': '',
@@ -293,34 +309,87 @@ class ImageEditPromptGenerator:
                 'causal_effect': ''
             },
             'multi_modal_constraints': [],
-            'edit_subject': [],
-            'new_subject': [],
-            'edit_type': '',
+            'edit_metadata': {
+                'edit_subject': [],
+                'new_subject': [],
+                'edit_type': '',
+                'complexity_level': ''
+            },
             'editing_instruction': ''
         }
 
         # Try to extract JSON
         try:
-            # Find JSON block
-            start_idx = response.find('{')
-            end_idx = response.rfind('}') + 1
+            # First, try to extract JSON from code blocks (```json ... ```)
+            json_str = None
+            if '```json' in response:
+                start_marker = response.find('```json')
+                end_marker = response.find('```', start_marker + 7)
+                if end_marker > start_marker:
+                    json_str = response[start_marker + 7:end_marker].strip()
+            elif '```' in response:
+                # Try generic code block
+                start_marker = response.find('```')
+                end_marker = response.find('```', start_marker + 3)
+                if end_marker > start_marker:
+                    potential_json = response[start_marker + 3:end_marker].strip()
+                    # Check if it looks like JSON (starts with {)
+                    if potential_json.startswith('{'):
+                        json_str = potential_json
 
-            if start_idx >= 0 and end_idx > start_idx:
-                json_str = response[start_idx:end_idx]
+            # If no code block found, try to find JSON directly
+            if json_str is None:
+                start_idx = response.find('{')
+                end_idx = response.rfind('}') + 1
+                if start_idx >= 0 and end_idx > start_idx:
+                    json_str = response[start_idx:end_idx]
+
+            if json_str:
+                # Clean up the JSON string (remove any trailing commas, etc.)
+                json_str = json_str.strip()
+                # Try to parse
                 parsed = json.loads(json_str)
 
                 # Update result, conforming to new format
                 result.update({
                     'sample_id': parsed.get('sample_id', ''),
                     'instruction': parsed.get('instruction', edit_request),
-                    'reasoning_chain': parsed.get('reasoning_chain', ''),
                     'counterfactual_premise': parsed.get('counterfactual_premise', result['counterfactual_premise']),
                     'multi_modal_constraints': parsed.get('multi_modal_constraints', []),
-                    'edit_subject': parsed.get('edit_subject', []),
-                    'new_subject': parsed.get('new_subject', []),
-                    'edit_type': parsed.get('edit_type', ''),
                     'editing_instruction': parsed.get('editing_instruction', '')
                 })
+
+                # Handle reasoning_chains (new format only)
+                reasoning_chains = parsed.get('reasoning_chains', {})
+                if isinstance(reasoning_chains, dict):
+                    result['reasoning_chains'] = {
+                        'descriptive': reasoning_chains.get('descriptive', ''),
+                        'causal': reasoning_chains.get('causal', ''),
+                        'comparative': reasoning_chains.get('comparative', '')
+                    }
+                else:
+                    result['reasoning_chains'] = {
+                        'descriptive': '',
+                        'causal': '',
+                        'comparative': ''
+                    }
+
+                # Handle edit_metadata (new format only)
+                edit_metadata = parsed.get('edit_metadata', {})
+                if isinstance(edit_metadata, dict):
+                    result['edit_metadata'] = {
+                        'edit_subject': edit_metadata.get('edit_subject', []),
+                        'new_subject': edit_metadata.get('new_subject', []),
+                        'edit_type': edit_metadata.get('edit_type', ''),
+                        'complexity_level': edit_metadata.get('complexity_level', '')
+                    }
+                else:
+                    result['edit_metadata'] = {
+                        'edit_subject': [],
+                        'new_subject': [],
+                        'edit_type': '',
+                        'complexity_level': ''
+                    }
 
                 # Ensure counterfactual_premise structure is complete
                 if isinstance(result['counterfactual_premise'], dict):
@@ -335,16 +404,116 @@ class ImageEditPromptGenerator:
                 if not isinstance(result['multi_modal_constraints'], list):
                     result['multi_modal_constraints'] = []
 
+                # Ensure edit_metadata structure is complete
+                if not isinstance(result['edit_metadata'], dict):
+                    result['edit_metadata'] = {
+                        'edit_subject': [],
+                        'new_subject': [],
+                        'edit_type': '',
+                        'complexity_level': ''
+                    }
+                else:
+                    result['edit_metadata'] = {
+                        'edit_subject': result['edit_metadata'].get('edit_subject', []),
+                        'new_subject': result['edit_metadata'].get('new_subject', []),
+                        'edit_type': result['edit_metadata'].get('edit_type', ''),
+                        'complexity_level': result['edit_metadata'].get('complexity_level', '')
+                    }
             else:
                 # If JSON not found, use edit request as base information
                 result['instruction'] = edit_request
-                result['reasoning_chain'] = response[:500]  # Use first 500 characters as reasoning chain
+                result['reasoning_chains'] = {
+                    'descriptive': response[:500],
+                    'causal': response[:500],
+                    'comparative': response[:500]
+                }
 
         except json.JSONDecodeError as e:
-            # JSON parsing failed, use original response and edit request
-            result['instruction'] = edit_request
-            result['reasoning_chain'] = response[:500]
-            print(f"JSON parsing warning: {e}")
+            # JSON parsing failed, try to fix common issues
+            print(f"JSON parsing failed, try to fix common issues: {e}")
+            try:
+                # Try to fix trailing commas and other common JSON issues
+                if json_str:
+                    # Remove trailing commas before closing braces/brackets
+                    fixed_json = re.sub(r',(\s*[}\]])', r'\1', json_str)
+                    # Try parsing again
+                    parsed = json.loads(fixed_json)
+                    # If successful, process as normal
+                    result.update({
+                        'sample_id': parsed.get('sample_id', ''),
+                        'instruction': parsed.get('instruction', edit_request),
+                        'counterfactual_premise': parsed.get('counterfactual_premise', result['counterfactual_premise']),
+                        'multi_modal_constraints': parsed.get('multi_modal_constraints', []),
+                        'editing_instruction': parsed.get('editing_instruction', '')
+                    })
+
+                    reasoning_chains = parsed.get('reasoning_chains', {})
+                    if isinstance(reasoning_chains, dict):
+                        result['reasoning_chains'] = {
+                            'descriptive': reasoning_chains.get('descriptive', ''),
+                            'causal': reasoning_chains.get('causal', ''),
+                            'comparative': reasoning_chains.get('comparative', '')
+                        }
+                    else:
+                        result['reasoning_chains'] = {
+                            'descriptive': '',
+                            'causal': '',
+                            'comparative': ''
+                        }
+
+                    edit_metadata = parsed.get('edit_metadata', {})
+                    if isinstance(edit_metadata, dict):
+                        result['edit_metadata'] = {
+                            'edit_subject': edit_metadata.get('edit_subject', []),
+                            'new_subject': edit_metadata.get('new_subject', []),
+                            'edit_type': edit_metadata.get('edit_type', ''),
+                            'complexity_level': edit_metadata.get('complexity_level', '')
+                        }
+                    else:
+                        result['edit_metadata'] = {
+                            'edit_subject': [],
+                            'new_subject': [],
+                            'edit_type': '',
+                            'complexity_level': ''
+                        }
+
+                    # Ensure structures are complete
+                    if isinstance(result['counterfactual_premise'], dict):
+                        result['counterfactual_premise'] = {
+                            'changed_factor': result['counterfactual_premise'].get('changed_factor', ''),
+                            'original_state': result['counterfactual_premise'].get('original_state', ''),
+                            'counterfactual_state': result['counterfactual_premise'].get('counterfactual_state', ''),
+                            'causal_effect': result['counterfactual_premise'].get('causal_effect', '')
+                        }
+
+                    if not isinstance(result['multi_modal_constraints'], list):
+                        result['multi_modal_constraints'] = []
+
+                    if not isinstance(result['edit_metadata'], dict):
+                        result['edit_metadata'] = {
+                            'edit_subject': [],
+                            'new_subject': [],
+                            'edit_type': '',
+                            'complexity_level': ''
+                        }
+                    else:
+                        result['edit_metadata'] = {
+                            'edit_subject': result['edit_metadata'].get('edit_subject', []),
+                            'new_subject': result['edit_metadata'].get('new_subject', []),
+                            'edit_type': result['edit_metadata'].get('edit_type', ''),
+                            'complexity_level': result['edit_metadata'].get('complexity_level', '')
+                        }
+                else:
+                    raise e
+            except (json.JSONDecodeError, Exception) as e2:
+                # If fixing failed, use edit request as base information
+                print(f"JSON parsing warning: {e} (fix attempt also failed: {e2})")
+                result['instruction'] = edit_request
+                result['reasoning_chains'] = {
+                    'descriptive': response[:500],
+                    'causal': response[:500],
+                    'comparative': response[:500]
+                }
 
         return result
 
@@ -422,6 +591,7 @@ class ImageEditPromptGenerator:
                         json.dump(result, f, ensure_ascii=False, indent=2)
 
             except Exception as e:
+                print(f"\nError processing sample {idx}: {e}")
                 error_result = {
                     'error': str(e),
                     'sample_id': data_item.get('sample_id', f'sample_{idx:05d}'),
@@ -430,7 +600,6 @@ class ImageEditPromptGenerator:
                     'index': idx
                 }
                 results.append(error_result)
-                print(f"\nError processing sample {idx}: {e}")
 
         # Save summary file
         if output_json_file:
