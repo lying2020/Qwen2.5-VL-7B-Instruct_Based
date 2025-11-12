@@ -570,17 +570,18 @@ def main():
         converted_data = json.load(f)
 
     parser = argparse.ArgumentParser(description='生成图像编辑提示词')
-    parser.add_argument('--image_dir', type=str, default=images_dir, help='图片基础目录（用于JSON中的相对路径）')
+
+    parser.add_argument('--input_image_path', type=str, default=images_dir, help='图片基础目录（用于JSON中的相对路径）')
+    parser.add_argument('--input_json_path', type=str, default=converted_data_json, help='批量处理的JSON文件路径')
+    parser.add_argument('--output_json_path', type=str, default=prj.OUTPUT_DIR, help='单独文件的输出目录')
+
     parser.add_argument('--image', type=str, default="factual_images/COCO_train2014_000000000154.jpg", help='源图片路径（必需）')
     parser.add_argument('--mask', type=str, default=None, help='源图片的Mask路径（可选），白色区域表示需要编辑的部分')
     parser.add_argument('--target', type=str, default=None, help='counterfactual_images/COCO_train2014_000000000154_590410.jpg')
     parser.add_argument('--target_mask', type=str, default=None, help='目标图片的Mask路径（可选），表示编辑后的区域')
     parser.add_argument('--prompt', type=str, default="Change zebra at the bottom to cow.", help='编辑提示词')
-
-    parser.add_argument('--json', type=str, default=None, help='批量处理的JSON文件路径')
-
     parser.add_argument('--output_json_file', type=str, default='output_json_file.json', help='输出文件路径')
-    parser.add_argument('--output_json_path', type=str, default=prj.OUTPUT_DIR, help='单独文件的输出目录')
+
     parser.add_argument('--save_individual', action='store_true', default=True, help='保存每个结果的单独文件')
 
     args = parser.parse_args()
@@ -588,12 +589,24 @@ def main():
     # 初始化生成器
     generator = ImageEditPromptGenerator()
 
-    if args.image and args.prompt:
+    if args.input_json_path:
+        # 批量处理
+        print(f"从JSON文件批量处理: {args.input_json_path}")
+        results = generator.process_from_json(
+            input_json_path = args.input_json_path,
+            input_image_path=args.input_image_path,
+            output_json_file=None,
+            output_json_path=args.output_json_path,
+            save_individual=args.save_individual
+        )
+        print(f"\n处理完成，共 {len(results)} 个结果")
+
+    elif args.image and args.prompt:
         # 单张图片处理
-        image_path = os.path.join(args.image_dir, args.image) if args.image_dir else args.image
-        image_mask_path = os.path.join(args.image_dir, args.mask) if args.mask and args.image_dir else args.mask
-        target_path = os.path.join(args.image_dir, args.target) if args.target and args.image_dir else args.target
-        target_mask_path = os.path.join(args.image_dir, args.target_mask) if args.target_mask and args.image_dir else args.target_mask
+        image_path = os.path.join(args.input_image_path, args.image) if args.input_image_path else args.image
+        image_mask_path = os.path.join(args.input_image_path, args.mask) if args.mask and args.input_image_path else args.mask
+        target_path = os.path.join(args.input_image_path, args.target) if args.target and args.input_image_path else args.target
+        target_mask_path = os.path.join(args.input_image_path, args.target_mask) if args.target_mask and args.input_image_path else args.target_mask
 
         print(f"处理图片: {image_path}")
         if image_mask_path:
@@ -618,20 +631,8 @@ def main():
             json.dump(result, f, ensure_ascii=False, indent=2)
         print(f"\n结果已保存到: {args.output_json_file}")
 
-    elif args.json:
-        # 批量处理
-        print(f"从JSON文件批量处理: {args.json}")
-        results = generator.process_from_json(
-            input_json_path = os.path.join(args.image_dir, args.json),
-            input_image_path=args.image_dir,
-            output_json_file=os.path.join(args.image_dir, args.output_json_file),
-            output_json_path=args.output_json_path,
-            save_individual=args.save_individual
-        )
-        print(f"\n处理完成，共 {len(results)} 个结果")
-
     else:
-        print("请提供 --image 和 --prompt 或 --json 参数")
+        print("请提供 --image 和 --prompt 或 --input_json_path 参数")
         parser.print_help()
 
 

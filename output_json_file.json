@@ -1,0 +1,38 @@
+{
+  "sample_id": "zebra_to_cow",
+  "instruction": "将底部的斑马改为牛。",
+  "reasoning_chain": "存在斑马 → 需要替换斑马 → 替换为牛",
+  "counterfactual_premise": {
+    "changed_factor": "斑马",
+    "original_state": "斑马在草地上行走",
+    "counterfactual_state": "牛在草地上行走",
+    "causal_effect": "场景从有斑马变为有牛"
+  },
+  "multi_modal_constraints": [
+    {
+      "type": "spatial_layout",
+      "description": "斑马位于图像底部，牛替换后也位于底部。"
+    },
+    {
+      "type": "semantic_content",
+      "description": "斑马被替换为牛，动物类别发生变化。"
+    },
+    {
+      "type": "physical_causal",
+      "description": "没有物理上的因果关系，只是视觉上的替换。"
+    },
+    {
+      "type": "temporal_reasoning",
+      "description": "没有时间上的变化，仅是静态图像中的对象替换。"
+    }
+  ],
+  "edit_subject": [
+    "斑马"
+  ],
+  "new_subject": [
+    "牛"
+  ],
+  "edit_type": "object_replacement",
+  "editing_instruction": "将底部的斑马替换为牛",
+  "raw_response": "```json\n{\n    \"sample_id\": \"zebra_to_cow\",\n    \"instruction\": \"将底部的斑马改为牛。\",\n    \"reasoning_chain\": \"存在斑马 → 需要替换斑马 → 替换为牛\",\n    \"counterfactual_premise\": {\n        \"changed_factor\": \"斑马\",\n        \"original_state\": \"斑马在草地上行走\",\n        \"counterfactual_state\": \"牛在草地上行走\",\n        \"causal_effect\": \"场景从有斑马变为有牛\"\n    },\n    \"multi_modal_constraints\": [\n        {\n            \"type\": \"spatial_layout\",\n            \"description\": \"斑马位于图像底部，牛替换后也位于底部。\"\n        },\n        {\n            \"type\": \"semantic_content\",\n            \"description\": \"斑马被替换为牛，动物类别发生变化。\"\n        },\n        {\n            \"type\": \"physical_causal\",\n            \"description\": \"没有物理上的因果关系，只是视觉上的替换。\"\n        },\n        {\n            \"type\": \"temporal_reasoning\",\n            \"description\": \"没有时间上的变化，仅是静态图像中的对象替换。\"\n        }\n    ],\n    \"edit_subject\": [\"斑马\"],\n    \"new_subject\": [\"牛\"],\n    \"edit_type\": \"object_replacement\",\n    \"editing_instruction\": \"将底部的斑马替换为牛\"\n}\n```"
+}
