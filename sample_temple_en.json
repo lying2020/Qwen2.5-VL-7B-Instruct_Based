@@ -17,13 +17,9 @@
     }
   ],
   "counterfactual_premise": {
-    "intervention": "brief_description_of_what_was_changed",
-    "world_comparison": {
-      "actual": "description_of_actual_world_state",
-      "counterfactual": "description_of_counterfactual_world_state"
-    },
-    "key_changes": ["list_of_main_attributes_that_will_change"],
-    "key_invariants": ["list_of_main_attributes_that_will_remain_unchanged"]
+    "change": "what_was_changed",
+    "from": "original_state",
+    "to": "new_state"
   },
   "multi_modal_constraints": [
     {
