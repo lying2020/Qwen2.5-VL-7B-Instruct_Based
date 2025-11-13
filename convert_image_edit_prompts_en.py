@@ -56,14 +56,16 @@ Based on this counterfactual instruction, generate structured image editing anno
 
 Instruction: "{instruction}"
 
+CRITICAL: Output ONLY valid JSON. Do NOT include markdown code blocks (```json or ```). Do NOT nest JSON structures inside string values. All string values must be plain text, not JSON objects.
+
 Please output strict JSON format with the following fields:
 {{
     "sample_id": "Auto-generated unique ID",
     "instruction": "Counterfactual instruction rewritten from semantic assumptions/conditional changes, introducing implicit and reasonable causal hypotheses. The instruction should start from semantic assumptions or conditional changes, such as personal situations, needs, constraints, or contextual factors, and naturally lead to the required image editing. Examples: 'I usually live alone and sometimes need to work from home. How should I renovate my bedroom?' or 'My personal doctor says I have been consuming too much sugar and eating unhealthily, and I should supplement with vitamin C. What should I do?'",
     "reasoning_chains": {{
-        "descriptive": "Descriptive reasoning chain: identify→analyze→transform→verify",
-        "causal": "Causal reasoning chain: premise→intervention→effect→outcome",
-        "comparative": "Comparative reasoning chain: original_analysis→target_analysis→difference_identification→transformation_strategy"
+        "descriptive": "Detailed descriptive reasoning chain as a plain text string. Describe step-by-step: what objects are in the image, their properties, spatial relationships, transformation strategy, and verification. Use plain text only, NOT JSON format, NOT code blocks.",
+        "causal": "Detailed causal reasoning chain as a plain text string. Explain: the premise/context, the specific intervention, immediate effects, and final outcome. Use plain text only, NOT JSON format, NOT code blocks.",
+        "comparative": "Detailed comparative reasoning chain as a plain text string. Compare: original image state, target image state, specific differences, and transformation strategy. Use plain text only, NOT JSON format, NOT code blocks."
     }},
     "counterfactual_premise": {{
         "changed_factor": "Key factor that was changed",
@@ -99,19 +101,28 @@ Please output strict JSON format with the following fields:
 }}
 
 Requirements:
-1. instruction MUST be rewritten from semantic assumptions/conditional changes, introducing implicit and reasonable causal hypotheses. Start from personal situations, needs, constraints, or contextual factors (like lifestyle, health conditions, social situations, environmental requirements, etc.), and naturally lead to the required image editing. The instruction should feel natural and reasonable, not directly stating the editing task. Examples:
+1. Output format: Output ONLY valid JSON. Do NOT wrap the output in markdown code blocks (```json or ```). Start directly with {{ and end with }}. All string values must be properly escaped JSON strings (use \\" for quotes, \\n for newlines).
+2. String values: All field values that are strings must be plain text strings, NOT nested JSON objects, NOT code blocks. For example, reasoning_chains.descriptive should be a plain text string like "In the image, there is a bed..." NOT a JSON object or code block.
+3. instruction MUST be rewritten from semantic assumptions/conditional changes, introducing implicit and reasonable causal hypotheses. Start from personal situations, needs, constraints, or contextual factors (like lifestyle, health conditions, social situations, environmental requirements, etc.), and naturally lead to the required image editing. The instruction should feel natural and reasonable, not directly stating the editing task. Examples:
    - "I usually live alone and sometimes need to work from home. How should I renovate my bedroom?" (leads to adding workspace furniture)
    - "My personal doctor says I have been consuming too much sugar and eating unhealthily, and I should supplement with vitamin C. What should I do?" (leads to replacing unhealthy food with fruits/vegetables)
    - "I recently joined a new company and want to have a small gathering with new colleagues, but one colleague said they are allergic to alcohol (or taking antibiotics). What should I do?" (leads to replacing alcoholic drinks with non-alcoholic alternatives)
-2. reasoning_chains should contain three types:
-   - descriptive: step-by-step identification and transformation process
-   - causal: causal logic from premise to outcome
-   - comparative: comparison between original and target states
-3. multi_modal_constraints should cover spatial, semantic, physical, and temporal aspects (spatial_layout, semantic_content, physical_causal, temporal_reasoning)
-4. edit_metadata.edit_subject and edit_metadata.new_subject should be specific and clear, editing objects and new objects should be specific and clear
-5. edit_metadata.edit_type should use standard values: "object_replacement", "addition", "removal", "modification", "transformation", "combination", "deletion", "rearrangement", "temporal_evolution"
-6. edit_metadata.complexity_level should be assessed based on the number of objects, spatial relationships, and editing difficulty: "simple", "medium", or "complex"
-7. editing_instruction should be concise and direct, using formats like "replace A with B", "add X", "remove Y"
+4. reasoning_chains MUST contain detailed, image-specific reasoning for three types as PLAIN TEXT STRINGS (NOT JSON objects, NOT code blocks, NOT generic templates):
+   - descriptive: A plain text string describing step-by-step reasoning. Example: "In the image, there is a bed on the right side of the room with a wooden frame. The room layout shows limited storage space. To optimize storage, we need to identify the bed's dimensions and position, analyze how replacing it with a dresser would affect the room's functionality, plan the transformation to maintain spatial harmony, and verify that the dresser fits the available space."
+   - causal: A plain text string explaining the causal logic. Example: "The premise is that the user needs more storage space in their bedroom. The intervention is replacing the bed with a wooden dresser. The immediate effect is freeing up floor space while adding storage capacity. The outcome is a more functional room layout that better serves the user's needs."
+   - comparative: A plain text string comparing original and target states. Example: "Original state: The image shows a bed positioned on the right side of a bedroom. Target state: The bed should be replaced with a wooden dresser in the same location. Key differences: The bed (sleeping furniture) is replaced with a dresser (storage furniture), maintaining similar size and position. Transformation strategy: Remove the bed object and insert a wooden dresser with appropriate dimensions and styling to match the room's aesthetic."
+5. multi_modal_constraints should cover spatial, semantic, physical, and temporal aspects (spatial_layout, semantic_content, physical_causal, temporal_reasoning)
+6. edit_metadata.edit_subject and edit_metadata.new_subject should be specific and clear, editing objects and new objects should be specific and clear
+7. edit_metadata.edit_type should use standard values: "object_replacement", "addition", "removal", "modification", "transformation", "combination", "deletion", "rearrangement", "temporal_evolution"
+8. edit_metadata.complexity_level should be assessed based on the number of objects, spatial relationships, and editing difficulty: "simple", "medium", or "complex"
+9. editing_instruction should be concise and direct, using formats like "replace A with B", "add X", "remove Y"
+
+CRITICAL REMINDER:
+- Output ONLY valid JSON format, starting with {{ and ending with }}
+- Do NOT wrap output in markdown code blocks (```json or ```)
+- All string values must be plain text strings, NOT nested JSON objects
+- Properly escape special characters in strings (use \\" for quotes, \\n for newlines)
+- Ensure the JSON is complete and properly closed
 
 """
 
@@ -149,7 +160,8 @@ class ImageEditPromptGenerator:
         image_mask_path: Optional[Union[str, Path, Image.Image]] = None,
         target_path: Optional[Union[str, Path, Image.Image]] = None,
         target_mask_path: Optional[Union[str, Path, Image.Image]] = None,
-        max_new_tokens: int = 512
+        max_new_tokens: int = 2048,
+        sample_id: Optional[str] = None
     ) -> Dict:
         """
         Generate editing prompt information for images, supports simultaneous input of source, mask, target and target_mask images
@@ -171,7 +183,6 @@ class ImageEditPromptGenerator:
             - multi_modal_constraints: Multi-modal constraint list (contains type and description)
             - edit_metadata: Edit metadata object (contains edit_subject, new_subject, edit_type, complexity_level)
             - editing_instruction: Detailed editing command
-            - raw_response: Raw model response
         """
         # Load source image
         if isinstance(image_path, (str, Path)):
@@ -275,8 +286,7 @@ class ImageEditPromptGenerator:
                 )[0]
 
             # Parse JSON response
-            result = self._parse_response(output_text, edit_request)
-            result['raw_response'] = output_text
+            result = self._parse_response(output_text, edit_request, sample_id=sample_id)
 
             # Auto-generate sample_id if not present
             if not result.get('sample_id'):
@@ -287,11 +297,10 @@ class ImageEditPromptGenerator:
         except Exception as e:
             return {
                 'error': str(e),
-                'edit_request': edit_request,
-                'raw_response': ''
+                'edit_request': edit_request
             }
 
-    def _parse_response(self, response: str, edit_request: str) -> Dict:
+    def _parse_response(self, response: str, edit_request: str, sample_id: Optional[str] = None) -> Dict:
         """Parse model response and extract JSON information (conforming to sample_temple_en.json format)"""
         # Initialize result structure, conforming to sample_temple_en.json format
         result = {
@@ -337,18 +346,48 @@ class ImageEditPromptGenerator:
                     if potential_json.startswith('{'):
                         json_str = potential_json
 
-            # If no code block found, try to find JSON directly
+            # If no code block found, try to find JSON directly using balanced braces
             if json_str is None:
                 start_idx = response.find('{')
-                end_idx = response.rfind('}') + 1
-                if start_idx >= 0 and end_idx > start_idx:
-                    json_str = response[start_idx:end_idx]
+                if start_idx >= 0:
+                    # Find the matching closing brace by counting braces
+                    brace_count = 0
+                    end_idx = start_idx
+                    for i in range(start_idx, len(response)):
+                        if response[i] == '{':
+                            brace_count += 1
+                        elif response[i] == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                end_idx = i + 1
+                                break
+                    if end_idx > start_idx:
+                        json_str = response[start_idx:end_idx]
 
             if json_str:
-                # Clean up the JSON string (remove any trailing commas, etc.)
+                # Clean up the JSON string
                 json_str = json_str.strip()
+                # Remove any nested code block markers that might be in string values
+                # This is a simple approach - replace ```json and ``` with escaped versions in string contexts
+                # But we need to be careful not to break valid JSON
+
                 # Try to parse
-                parsed = json.loads(json_str)
+                try:
+                    parsed = json.loads(json_str)
+                except json.JSONDecodeError as parse_err:
+                    # Try to fix common issues
+                    # Remove trailing commas
+                    fixed_json = re.sub(r',(\s*[}\]])', r'\1', json_str)
+                    # Try to fix unclosed strings (basic attempt)
+                    # Remove any ```json or ``` markers that appear in the middle (likely in string values)
+                    fixed_json = re.sub(r'```json\s*', '', fixed_json)
+                    fixed_json = re.sub(r'```\s*', '', fixed_json)
+                    # Try parsing again
+                    try:
+                        parsed = json.loads(fixed_json)
+                    except json.JSONDecodeError:
+                        # If still fails, try to extract partial data
+                        raise parse_err
 
                 # Update result, conforming to new format
                 result.update({
@@ -362,10 +401,28 @@ class ImageEditPromptGenerator:
                 # Handle reasoning_chains (new format only)
                 reasoning_chains = parsed.get('reasoning_chains', {})
                 if isinstance(reasoning_chains, dict):
+                    # Clean up any code block markers in the reasoning chains
+                    def clean_reasoning_text(text):
+                        if not isinstance(text, str):
+                            return text
+                        # Remove code block markers
+                        text = re.sub(r'```json\s*', '', text)
+                        text = re.sub(r'```\s*', '', text)
+                        # Remove any incomplete JSON structures that might be embedded
+                        # This is a simple cleanup - remove lines that look like JSON structure starts
+                        lines = text.split('\n')
+                        cleaned_lines = []
+                        for line in lines:
+                            # Skip lines that are just JSON structure markers
+                            if line.strip().startswith('{') and not any(c in line for c in ['"', "'"]):
+                                continue
+                            cleaned_lines.append(line)
+                        return '\n'.join(cleaned_lines).strip()
+
                     result['reasoning_chains'] = {
-                        'descriptive': reasoning_chains.get('descriptive', ''),
-                        'causal': reasoning_chains.get('causal', ''),
-                        'comparative': reasoning_chains.get('comparative', '')
+                        'descriptive': clean_reasoning_text(reasoning_chains.get('descriptive', '')),
+                        'causal': clean_reasoning_text(reasoning_chains.get('causal', '')),
+                        'comparative': clean_reasoning_text(reasoning_chains.get('comparative', ''))
                     }
                 else:
                     result['reasoning_chains'] = {
@@ -430,12 +487,18 @@ class ImageEditPromptGenerator:
 
         except json.JSONDecodeError as e:
             # JSON parsing failed, try to fix common issues
-            print(f"JSON parsing failed, try to fix common issues: {e}")
+            sample_info = f" (sample_id: {sample_id})" if sample_id else ""
+            print(f"JSON parsing failed{sample_info}, trying to fix: {e}")
             try:
-                # Try to fix trailing commas and other common JSON issues
+                # Try to fix common JSON issues
                 if json_str:
                     # Remove trailing commas before closing braces/brackets
                     fixed_json = re.sub(r',(\s*[}\]])', r'\1', json_str)
+                    # Remove code block markers that might be in string values
+                    fixed_json = re.sub(r'```json\s*', '', fixed_json)
+                    fixed_json = re.sub(r'```\s*', '', fixed_json)
+                    # Try to fix unclosed strings by finding and closing them
+                    # This is a basic attempt - find strings that aren't properly closed
                     # Try parsing again
                     parsed = json.loads(fixed_json)
                     # If successful, process as normal
@@ -449,10 +512,27 @@ class ImageEditPromptGenerator:
 
                     reasoning_chains = parsed.get('reasoning_chains', {})
                     if isinstance(reasoning_chains, dict):
+                        # Clean up any code block markers in the reasoning chains
+                        def clean_reasoning_text(text):
+                            if not isinstance(text, str):
+                                return text
+                            # Remove code block markers
+                            text = re.sub(r'```json\s*', '', text)
+                            text = re.sub(r'```\s*', '', text)
+                            # Remove any incomplete JSON structures that might be embedded
+                            lines = text.split('\n')
+                            cleaned_lines = []
+                            for line in lines:
+                                # Skip lines that are just JSON structure markers
+                                if line.strip().startswith('{') and not any(c in line for c in ['"', "'"]):
+                                    continue
+                                cleaned_lines.append(line)
+                            return '\n'.join(cleaned_lines).strip()
+
                         result['reasoning_chains'] = {
-                            'descriptive': reasoning_chains.get('descriptive', ''),
-                            'causal': reasoning_chains.get('causal', ''),
-                            'comparative': reasoning_chains.get('comparative', '')
+                            'descriptive': clean_reasoning_text(reasoning_chains.get('descriptive', '')),
+                            'causal': clean_reasoning_text(reasoning_chains.get('causal', '')),
+                            'comparative': clean_reasoning_text(reasoning_chains.get('comparative', ''))
                         }
                     else:
                         result['reasoning_chains'] = {
@@ -507,7 +587,8 @@ class ImageEditPromptGenerator:
                     raise e
             except (json.JSONDecodeError, Exception) as e2:
                 # If fixing failed, use edit request as base information
-                print(f"JSON parsing warning: {e} (fix attempt also failed: {e2})")
+                sample_info = f" (sample_id: {sample_id})" if sample_id else ""
+                print(f"JSON parsing warning{sample_info}: {e} (fix attempt also failed: {e2})")
                 result['instruction'] = edit_request
                 result['reasoning_chains'] = {
                     'descriptive': response[:500],
@@ -562,33 +643,74 @@ class ImageEditPromptGenerator:
                     print(f"\nSkipping sample {idx}: missing image_path or instruction")
                     continue
 
-                result = self.generate_editing_prompts(
-                    image_path,
-                    edit_request,
-                    image_mask_path=image_mask_path,
-                    target_path=target_path,
-                    target_mask_path=target_mask_path
-                )
+                # Retry mechanism: try up to 3 times (1 initial + 2 retries)
+                max_retries = 2
+                result = None
+                retry_count = 0
+
+                while retry_count <= max_retries:
+                    try:
+                        result = self.generate_editing_prompts(
+                            image_path,
+                            edit_request,
+                            image_mask_path=image_mask_path,
+                            target_path=target_path,
+                            target_mask_path=target_mask_path,
+                            sample_id=sample_id
+                        )
+
+                        # Check if parsing was successful by checking key fields
+                        # If error field exists, or critical fields are empty/missing, consider it a failure
+                        has_error = 'error' in result
+                        has_empty_instruction = not result.get('instruction') or result.get('instruction') == edit_request
+                        has_empty_reasoning = not result.get('reasoning_chains', {}).get('descriptive')
+                        has_empty_premise = not result.get('counterfactual_premise', {}).get('changed_factor')
+                        has_empty_metadata = not result.get('edit_metadata', {}).get('edit_subject')
+
+                        # If all critical fields are populated, consider it successful
+                        if not has_error and not (has_empty_instruction and has_empty_reasoning and has_empty_premise and has_empty_metadata):
+                            # Success - break out of retry loop
+                            break
+                        else:
+                            # Parsing likely failed or result is incomplete
+                            if retry_count < max_retries:
+                                retry_count += 1
+                                print(f"\n  Retry {retry_count}/{max_retries} for {sample_id} due to parsing issues...")
+                                continue
+                            else:
+                                # Max retries reached, use the result anyway
+                                print(f"\n  Max retries reached for {sample_id}, using partial result")
+                                break
+
+                    except Exception as e:
+                        if retry_count < max_retries:
+                            retry_count += 1
+                            print(f"\n  Retry {retry_count}/{max_retries} for {sample_id} due to exception: {e}")
+                            continue
+                        else:
+                            # Max retries reached, raise the exception
+                            raise
 
                 # Preserve information from original data
-                result['sample_id'] = sample_id
-                result['image_path'] = str(image_path)
-                result['edit_request'] = edit_request
-                if image_mask_path:
-                    result['image_mask_path'] = str(image_mask_path)
-                if target_path:
-                    result['target_path'] = str(target_path)
-                if target_mask_path:
-                    result['target_mask_path'] = str(target_mask_path)
-                result['index'] = idx
+                if result:
+                    result['sample_id'] = sample_id
+                    # Note: image_path, image_mask_path, target_path, target_mask_path, and index are not included in the output
 
-                results.append(result)
+                    results.append(result)
 
-                # Save individual file, using sample_id as filename
-                if save_individual and output_json_path:
-                    output_json_file_individual = output_json_path / f"{sample_id}.json"
-                    with open(output_json_file_individual, 'w', encoding='utf-8') as f:
-                        json.dump(result, f, ensure_ascii=False, indent=2)
+                    # Save individual file, using sample_id as filename
+                    if save_individual and output_json_path:
+                        output_json_file_individual = output_json_path / f"{sample_id}.json"
+                        with open(output_json_file_individual, 'w', encoding='utf-8') as f:
+                            json.dump(result, f, ensure_ascii=False, indent=2)
+                else:
+                    # Should not happen, but handle it
+                    print(f"\n  Failed to generate result for {sample_id} after {max_retries} retries")
+                    error_result = {
+                        'error': 'Failed after max retries',
+                        'sample_id': sample_id
+                    }
+                    results.append(error_result)
 
             except Exception as e:
                 print(f"\nError processing sample {idx}: {e}")

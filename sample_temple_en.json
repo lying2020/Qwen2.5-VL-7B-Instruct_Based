@@ -1,16 +1,29 @@
 {
   "sample_id": "automatically_generated_unique_id_eg_cf_urban_001",
+  "image_name": "image_name_eg_urban_001.jpg",
   "instruction": "original_counterfactual_instruction",
-  "reasoning_chains": {
-    "descriptive": "descriptive_reasoning_chain: identify→analyze→transform→verify",
-    "causal": "causal_reasoning_chain: premise→intervention→effect→outcome",
-    "comparative": "comparative_reasoning_chain: original_analysis→target_analysis→difference_identification→transformation_strategy"
-  },
+  "reasoning_chains": [
+    {
+      "type": "descriptive",
+      "chain": "descriptive_reasoning_chain: identify→analyze→transform→verify"
+    },
+    {
+      "type": "causal",
+      "chain": "causal_reasoning_chain: premise→intervention→effect→outcome"
+    },
+    {
+      "type": "comparative",
+      "chain": "comparative_reasoning_chain: original_analysis→target_analysis→difference_identification→transformation_strategy"
+    }
+  ],
   "counterfactual_premise": {
-    "changed_factor": "key_factor_that_was_changed",
-    "original_state": "description_of_original_state",
-    "counterfactual_state": "description_of_counterfactual_state",
-    "causal_effect": "expected_causal_effect"
+    "intervention": "brief_description_of_what_was_changed",
+    "world_comparison": {
+      "actual": "description_of_actual_world_state",
+      "counterfactual": "description_of_counterfactual_world_state"
+    },
+    "key_changes": ["list_of_main_attributes_that_will_change"],
+    "key_invariants": ["list_of_main_attributes_that_will_remain_unchanged"]
   },
   "multi_modal_constraints": [
     {
@@ -30,11 +43,9 @@
       "description": "temporal_reasoning_constraints: temporal_changes_aging_seasons_historical_evolution_development_processes"
     }
   ],
-  "edit_metadata": {
-    "edit_subject": ["list_of_objects_to_be_edited"],
-    "new_subject": ["list_of_new_objects"],
-    "edit_type": "object_replacement|addition|removal|modification|temporal_evolution",
-    "complexity_level": "simple|medium|complex"
-  },
+  "edit_subject": ["list_of_objects_to_be_edited"],
+  "new_subject": ["list_of_new_objects"],
+  "edit_type": "object_replacement|addition|removal|modification|temporal_evolution",
+  "complexity_level": "simple|medium|complex",
   "editing_instruction": "direct_clear_editing_command_suitable_for_inpainting_models"
 }
