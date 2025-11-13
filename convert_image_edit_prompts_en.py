@@ -1037,9 +1037,9 @@ def main():
     # converted_data_json = os.path.join(prj.HALLUSEGBENCH_DATASET_PATH, "converted_data.json")
     # prompts_output_dir = prj.PROMPTS_OUTPUT_DIR
 
-    # images_dir = prj.HALLUSEGGOOD_DATASET_PATH
-    # converted_data_json = os.path.join(prj.HALLUSEGGOOD_DATASET_PATH, "converted_data.json")
-    # prompts_output_dir = prj.PROMPTS_OUTPUT_HALLUSEGGOOD_DIR
+    images_dir = prj.HALLUSEGGOOD_DATASET_PATH
+    converted_data_json = os.path.join(prj.HALLUSEGGOOD_DATASET_PATH, "converted_data.json")
+    prompts_output_dir = prj.PROMPTS_OUTPUT_HALLUSEGGOOD_DIR
 
 
     # images_dir = prj.EditBench_DATASET_PATH
@@ -1047,9 +1047,9 @@ def main():
     # prompts_output_dir = prj.PROMPTS_OUTPUT_EDITBENCH_DIR
 
 
-    images_dir = prj.EditBenchGood_DATASET_PATH
-    converted_data_json = os.path.join(prj.EditBenchGood_DATASET_PATH, "converted_data.json")
-    prompts_output_dir = prj.PROMPTS_OUTPUT_EDITBENCHGOOD_DIR
+    # images_dir = prj.EditBenchGood_DATASET_PATH
+    # converted_data_json = os.path.join(prj.EditBenchGood_DATASET_PATH, "converted_data.json")
+    # prompts_output_dir = prj.PROMPTS_OUTPUT_EDITBENCHGOOD_DIR
 
 
     parser = argparse.ArgumentParser(description='Generate image editing prompts')
