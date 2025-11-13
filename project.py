@@ -38,7 +38,7 @@ PROMPTS_OUTPUT_HALLUSEGGOOD_DIR = os.path.join(HALLUSEGGOOD_DATASET_PATH, "promp
 os.makedirs(PROMPTS_OUTPUT_HALLUSEGGOOD_DIR, exist_ok=True)
 
 EditBench_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/dataset/EditBench"
-PROMPTS_OUTPUT_EDITBENCH_DIR = os.path.join(EditBench_DATASET_PATH, "prompts_output")
+PROMPTS_OUTPUT_EDITBENCH_DIR = os.path.join(EditBench_DATASET_PATH, "prompts_output_new")
 os.makedirs(PROMPTS_OUTPUT_EDITBENCH_DIR, exist_ok=True)
 
 
