@@ -39,7 +39,7 @@ def create_editing_prompt(instruction, has_source=True, has_mask=False, has_targ
         image_context.append(f"Image {image_idx} is the original image (source image)")
         image_idx += 1
     if has_mask:
-        image_context.append(f"Image {image_idx} is the editing region mask of the original image (source mask image), where white areas indicate the parts to be edited")
+        image_context.append(f"Image {image_idx} is the binary mask of the original image (source mask image), a black-and-white image where white areas indicate the parts to be edited and black areas represent the background that should remain unchanged")
         image_idx += 1
     if has_target:
         image_context.append(f"Image {image_idx} is the edited target image (target image)")
@@ -1037,7 +1037,7 @@ def main():
     # converted_data_json = os.path.join(prj.HALLUSEGBENCH_DATASET_PATH, "converted_data.json")
     # prompts_output_dir = prj.PROMPTS_OUTPUT_DIR
 
-    # converted_data_json = os.path.join(prj.HALLUSEGGOOD_DATASET_PATH, "halluseggood_data.json")
+    # converted_data_json = os.path.join(prj.HALLUSEGGOOD_DATASET_PATH, "converted_data.json")
     # prompts_output_dir = prj.PROMPTS_OUTPUT_HALLUSEGGOOD_DIR
 
 
