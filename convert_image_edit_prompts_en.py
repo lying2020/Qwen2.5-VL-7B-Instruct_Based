@@ -50,90 +50,47 @@ def create_editing_prompt(instruction, has_source=True, has_mask=False, has_targ
     image_context_str = ". ".join(image_context) + "." if image_context else ""
 
     return f"""
-Based on this counterfactual instruction, generate structured image editing annotations:
+Generate structured image editing annotations based on this instruction:
 
 {image_context_str}
 
 Instruction: "{instruction}"
 
-CRITICAL: Output ONLY valid JSON. Do NOT include markdown code blocks (```json or ```). Do NOT nest JSON structures inside string values. All string values must be plain text, not JSON objects.
+Output a valid JSON object with the following structure. Start with {{ and end with }}. Do NOT use markdown code blocks.
 
-Please output strict JSON format with the following fields:
 {{
-    "sample_id": "Auto-generated unique ID",
-    "image_name": "Image filename (extract from factual image path)",
-    "instruction": "Counterfactual instruction rewritten from semantic assumptions/conditional changes, introducing implicit and reasonable causal hypotheses. The instruction should start from semantic assumptions or conditional changes, such as personal situations, needs, constraints, or contextual factors, and naturally lead to the required image editing. Examples: 'I usually live alone and sometimes need to work from home. How should I renovate my bedroom?' or 'My personal doctor says I have been consuming too much sugar and eating unhealthily, and I should supplement with vitamin C. What should I do?'",
+    "sample_id": "unique_id",
+    "image_name": "filename.jpg",
+    "instruction": "Rewrite the instruction from a personal perspective or contextual need that naturally leads to this editing. Example: 'I need more storage space in my bedroom. How can I optimize it?'",
     "reasoning_chains": [
-        {{
-            "type": "descriptive",
-            "chain": "Detailed descriptive reasoning chain as a plain text string. Describe step-by-step: what objects are in the image, their properties, spatial relationships, transformation strategy, and verification. Use plain text only, NOT JSON format, NOT code blocks."
-        }},
-        {{
-            "type": "causal",
-            "chain": "Detailed causal reasoning chain as a plain text string. Explain: the premise/context, the specific intervention, immediate effects, and final outcome. Use plain text only, NOT JSON format, NOT code blocks."
-        }},
-        {{
-            "type": "comparative",
-            "chain": "Detailed comparative reasoning chain as a plain text string. Compare: original image state, target image state, specific differences, and transformation strategy. Use plain text only, NOT JSON format, NOT code blocks."
-        }}
+        {{"type": "descriptive", "chain": "Describe what you see in the image and the transformation needed"}},
+        {{"type": "causal", "chain": "Explain why this change is needed and what effects it will have"}},
+        {{"type": "comparative", "chain": "Compare the original and target states, identify differences"}}
     ],
     "counterfactual_premise": {{
-        "change": "Brief description of what was changed",
-        "from": "Description of original state",
-        "to": "Description of new state"
+        "aspect": "What was changed",
+        "from": "Original state",
+        "to": "New state"
     }},
     "multi_modal_constraints": [
-        {{
-            "type": "spatial_layout",
-            "description": "Object positions, sizes, orientations, relative positional relationships, occlusion relationships, perspective relationships, etc."
-        }},
-        {{
-            "type": "semantic_content",
-            "description": "Object categories, colors, materials and other attributes, replacement relationships, semantic consistency"
-        }},
-        {{
-            "type": "physical_causal",
-            "description": "Physical laws, mechanical relationships, causal relationships, gravitational effects, occlusion relationships, perspective relationships, etc."
-        }},
-        {{
-            "type": "temporal_reasoning",
-            "description": "Temporal changes, age, seasons, historical evolution"
-        }}
+        {{"type": "spatial_layout", "description": "Spatial constraints"}},
+        {{"type": "semantic_content", "description": "Semantic constraints"}},
+        {{"type": "physical_causal", "description": "Physical constraints"}},
+        {{"type": "temporal_reasoning", "description": "Temporal constraints"}}
     ],
-    "edit_subject": ["List of editing objects"],
-    "new_subject": ["List of new objects"],
-    "edit_type": "Editing type: object_replacement|addition|removal|modification|transformation|combination|deletion|rearrangement|temporal_evolution",
-    "complexity_level": "Complexity level: simple|medium|complex",
-    "editing_instruction": "Detailed editing command, direct editing command suitable for inpainting model understanding"
+    "edit_subject": ["object1"],
+    "new_subject": ["object2"],
+    "edit_type": "object_replacement",
+    "complexity_level": "simple",
+    "editing_instruction": "Direct editing command"
 }}
 
-Requirements:
-1. Output format: Output ONLY valid JSON. Do NOT wrap the output in markdown code blocks (```json or ```). Start directly with {{ and end with }}. All string values must be properly escaped JSON strings (use \\" for quotes, \\n for newlines).
-2. String values: All field values that are strings must be plain text strings, NOT nested JSON objects, NOT code blocks. For example, reasoning_chains.descriptive should be a plain text string like "In the image, there is a bed..." NOT a JSON object or code block.
-3. instruction MUST be rewritten from semantic assumptions/conditional changes, introducing implicit and reasonable causal hypotheses. Start from personal situations, needs, constraints, or contextual factors (like lifestyle, health conditions, social situations, environmental requirements, etc.), and naturally lead to the required image editing. The instruction should feel natural and reasonable, not directly stating the editing task. Examples:
-   - "I usually live alone and sometimes need to work from home. How should I renovate my bedroom?" (leads to adding workspace furniture)
-   - "My personal doctor says I have been consuming too much sugar and eating unhealthily, and I should supplement with vitamin C. What should I do?" (leads to replacing unhealthy food with fruits/vegetables)
-   - "I recently joined a new company and want to have a small gathering with new colleagues, but one colleague said they are allergic to alcohol (or taking antibiotics). What should I do?" (leads to replacing alcoholic drinks with non-alcoholic alternatives)
-4. reasoning_chains MUST be an array of objects, each with "type" and "chain" fields. The chain field should contain detailed, image-specific reasoning as PLAIN TEXT STRINGS (NOT JSON objects, NOT code blocks, NOT generic templates):
-   - type: "descriptive", chain: A plain text string describing step-by-step reasoning. Example: "In the image, there is a bed on the right side of the room with a wooden frame. The room layout shows limited storage space. To optimize storage, we need to identify the bed's dimensions and position, analyze how replacing it with a dresser would affect the room's functionality, plan the transformation to maintain spatial harmony, and verify that the dresser fits the available space."
-   - type: "causal", chain: A plain text string explaining the causal logic. Example: "The premise is that the user needs more storage space in their bedroom. The intervention is replacing the bed with a wooden dresser. The immediate effect is freeing up floor space while adding storage capacity. The outcome is a more functional room layout that better serves the user's needs."
-   - type: "comparative", chain: A plain text string comparing original and target states. Example: "Original state: The image shows a bed positioned on the right side of a bedroom. Target state: The bed should be replaced with a wooden dresser in the same location. Key differences: The bed (sleeping furniture) is replaced with a dresser (storage furniture), maintaining similar size and position. Transformation strategy: Remove the bed object and insert a wooden dresser with appropriate dimensions and styling to match the room's aesthetic."
-5. counterfactual_premise MUST contain:
-   - change: Brief description of what was changed
-   - from: Description of original state
-   - to: Description of new state
-6. multi_modal_constraints should cover spatial, semantic, physical, and temporal aspects (spatial_layout, semantic_content, physical_causal, temporal_reasoning)
-7. edit_subject and new_subject should be specific and clear arrays, editing objects and new objects should be specific and clear
-8. edit_type should use standard values: "object_replacement", "addition", "removal", "modification", "transformation", "combination", "deletion", "rearrangement", "temporal_evolution"
-9. complexity_level should be assessed based on the number of objects, spatial relationships, and editing difficulty: "simple", "medium", or "complex"
-10. editing_instruction should be concise and direct, using formats like "replace A with B", "add X", "remove Y"
-
-CRITICAL REMINDER:
-- Output ONLY valid JSON format, starting with {{ and ending with }}
-- Do NOT wrap output in markdown code blocks (```json or ```)
-- All string values must be plain text strings, NOT nested JSON objects
-- Properly escape special characters in strings (use \\" for quotes, \\n for newlines)
-- Ensure the JSON is complete and properly closed
+Important:
+- All fields must be filled with meaningful content
+- reasoning_chains.chain must be plain text, NOT JSON
+- instruction should be rewritten from personal/contextual perspective
+- edit_type: object_replacement|addition|removal|modification|transformation|combination|deletion|rearrangement|temporal_evolution
+- complexity_level: simple|medium|complex
 
 """
 
@@ -191,7 +148,7 @@ class ImageEditPromptGenerator:
             - image_name: Image filename (extracted from factual image path)
             - instruction: Counterfactual instruction rewritten from semantic assumptions/conditional changes
             - reasoning_chains: Array of reasoning chain objects, each with "type" and "chain" fields
-            - counterfactual_premise: Counterfactual premise object (contains change, from, to)
+            - counterfactual_premise: Counterfactual premise object (contains aspect, from, to)
             - multi_modal_constraints: Multi-modal constraint list (contains type and description)
             - edit_subject: List of editing objects
             - new_subject: List of new objects
@@ -325,7 +282,7 @@ class ImageEditPromptGenerator:
             'instruction': '',
             'reasoning_chains': [],
             'counterfactual_premise': {
-                'change': '',
+                'aspect': '',
                 'from': '',
                 'to': ''
             },
@@ -405,9 +362,20 @@ class ImageEditPromptGenerator:
                         raise parse_err
 
                 # Update result, conforming to new format
+                # Ensure image_name is extracted from path, not from parsed JSON (which might be "Image 1" etc.)
+                parsed_image_name = parsed.get('image_name', '')
+                if image_path:
+                    # Always prefer the extracted name from path
+                    final_image_name = Path(image_path).name
+                elif parsed_image_name and parsed_image_name not in ['Image 1', 'Image 2', 'Image 3', 'Image 4']:
+                    # Use parsed name only if it's not a generic "Image N" value
+                    final_image_name = parsed_image_name
+                else:
+                    final_image_name = result.get('image_name', '')
+
                 result.update({
                     'sample_id': parsed.get('sample_id', '') or result.get('sample_id', ''),
-                    'image_name': parsed.get('image_name', '') or result.get('image_name', ''),
+                    'image_name': final_image_name,
                     'instruction': parsed.get('instruction', edit_request),
                     'multi_modal_constraints': parsed.get('multi_modal_constraints', []),
                     'edit_subject': parsed.get('edit_subject', []),
@@ -426,12 +394,63 @@ class ImageEditPromptGenerator:
                         # Remove code block markers
                         text = re.sub(r'```json\s*', '', text)
                         text = re.sub(r'```\s*', '', text)
+
+                        # Check if the text contains nested JSON structure
+                        # If it starts with { and contains "sample_id" or "reasoning_chains", it's likely nested JSON
+                        text_stripped = text.strip()
+                        if text_stripped.startswith('{') and ('"sample_id"' in text or '"reasoning_chains"' in text or "'sample_id'" in text):
+                            # Try to extract the actual chain content from nested JSON
+                            try:
+                                # Try to parse as JSON first
+                                nested_json = json.loads(text)
+                                # If it's a nested JSON, try to extract chain from reasoning_chains
+                                if isinstance(nested_json, dict) and 'reasoning_chains' in nested_json:
+                                    chains = nested_json.get('reasoning_chains', [])
+                                    if isinstance(chains, list) and len(chains) > 0:
+                                        # Try to find the matching chain type
+                                        for chain_obj in chains:
+                                            if isinstance(chain_obj, dict) and 'chain' in chain_obj:
+                                                return clean_reasoning_text(chain_obj['chain'])
+                                # If we can't extract, return empty or a fallback
+                                return ""
+                            except (json.JSONDecodeError, Exception):
+                                # If parsing fails, try to extract text between quotes or after "chain":
+                                # Look for pattern like "chain": "actual text here"
+                                match = re.search(r'"chain"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', text, re.DOTALL)
+                                if match:
+                                    return match.group(1).replace('\\"', '"').replace('\\n', '\n')
+                                # If no match, try to find text after "chain":
+                                match = re.search(r'"chain"\s*:\s*"([^"]+)"', text)
+                                if match:
+                                    return match.group(1)
+                                # Last resort: remove all JSON structure markers
+                                lines = text.split('\n')
+                                cleaned_lines = []
+                                in_quotes = False
+                                for line in lines:
+                                    stripped = line.strip()
+                                    # Skip JSON structure lines
+                                    if stripped.startswith('{') or stripped.startswith('}') or stripped.startswith('[') or stripped.startswith(']'):
+                                        continue
+                                    # Skip lines with JSON keys
+                                    if re.match(r'^\s*"[^"]+"\s*:', line):
+                                        continue
+                                    cleaned_lines.append(line)
+                                result = '\n'.join(cleaned_lines).strip()
+                                # Remove any remaining JSON artifacts
+                                result = re.sub(r'^\s*[{\[\]}]\s*', '', result)
+                                return result
+
                         # Remove any incomplete JSON structures that might be embedded
                         lines = text.split('\n')
                         cleaned_lines = []
                         for line in lines:
                             # Skip lines that are just JSON structure markers
-                            if line.strip().startswith('{') and not any(c in line for c in ['"', "'"]):
+                            stripped = line.strip()
+                            if stripped in ['{', '}', '[', ']'] or (stripped.startswith('{') and not any(c in line for c in ['"', "'"])):
+                                continue
+                            # Skip lines that are JSON keys
+                            if re.match(r'^\s*"[^"]+"\s*:', line):
                                 continue
                             cleaned_lines.append(line)
                         return '\n'.join(cleaned_lines).strip()
@@ -451,12 +470,46 @@ class ImageEditPromptGenerator:
                     def clean_reasoning_text(text):
                         if not isinstance(text, str):
                             return text
+                        # Remove code block markers
                         text = re.sub(r'```json\s*', '', text)
                         text = re.sub(r'```\s*', '', text)
+
+                        # Check if the text contains nested JSON structure
+                        text_stripped = text.strip()
+                        if text_stripped.startswith('{') and ('"sample_id"' in text or '"reasoning_chains"' in text or "'sample_id'" in text):
+                            try:
+                                nested_json = json.loads(text)
+                                if isinstance(nested_json, dict) and 'reasoning_chains' in nested_json:
+                                    chains = nested_json.get('reasoning_chains', [])
+                                    if isinstance(chains, list) and len(chains) > 0:
+                                        for chain_obj in chains:
+                                            if isinstance(chain_obj, dict) and 'chain' in chain_obj:
+                                                return clean_reasoning_text(chain_obj['chain'])
+                                return ""
+                            except (json.JSONDecodeError, Exception):
+                                match = re.search(r'"chain"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', text, re.DOTALL)
+                                if match:
+                                    return match.group(1).replace('\\"', '"').replace('\\n', '\n')
+                                lines = text.split('\n')
+                                cleaned_lines = []
+                                for line in lines:
+                                    stripped = line.strip()
+                                    if stripped in ['{', '}', '[', ']'] or (stripped.startswith('{') and not any(c in line for c in ['"', "'"])):
+                                        continue
+                                    if re.match(r'^\s*"[^"]+"\s*:', line):
+                                        continue
+                                    cleaned_lines.append(line)
+                                result = '\n'.join(cleaned_lines).strip()
+                                result = re.sub(r'^\s*[{\[\]}]\s*', '', result)
+                                return result
+
                         lines = text.split('\n')
                         cleaned_lines = []
                         for line in lines:
-                            if line.strip().startswith('{') and not any(c in line for c in ['"', "'"]):
+                            stripped = line.strip()
+                            if stripped in ['{', '}', '[', ']'] or (stripped.startswith('{') and not any(c in line for c in ['"', "'"])):
+                                continue
+                            if re.match(r'^\s*"[^"]+"\s*:', line):
                                 continue
                             cleaned_lines.append(line)
                         return '\n'.join(cleaned_lines).strip()
@@ -473,13 +526,13 @@ class ImageEditPromptGenerator:
                 counterfactual_premise = parsed.get('counterfactual_premise', {})
                 if isinstance(counterfactual_premise, dict):
                     result['counterfactual_premise'] = {
-                        'change': counterfactual_premise.get('change', ''),
+                        'aspect': counterfactual_premise.get('aspect', ''),
                         'from': counterfactual_premise.get('from', ''),
                         'to': counterfactual_premise.get('to', '')
                     }
                 else:
                     result['counterfactual_premise'] = {
-                        'change': '',
+                        'aspect': '',
                         'from': '',
                         'to': ''
                     }
@@ -513,9 +566,18 @@ class ImageEditPromptGenerator:
                     # Try parsing again
                     parsed = json.loads(fixed_json)
                     # If successful, process as normal (same logic as above)
+                    # Ensure image_name is extracted from path, not from parsed JSON
+                    parsed_image_name = parsed.get('image_name', '')
+                    if image_path:
+                        final_image_name = Path(image_path).name
+                    elif parsed_image_name and parsed_image_name not in ['Image 1', 'Image 2', 'Image 3', 'Image 4']:
+                        final_image_name = parsed_image_name
+                    else:
+                        final_image_name = result.get('image_name', '')
+
                     result.update({
                         'sample_id': parsed.get('sample_id', '') or result.get('sample_id', ''),
-                        'image_name': parsed.get('image_name', '') or result.get('image_name', ''),
+                        'image_name': final_image_name,
                         'instruction': parsed.get('instruction', edit_request),
                         'multi_modal_constraints': parsed.get('multi_modal_constraints', []),
                         'edit_subject': parsed.get('edit_subject', []),
@@ -531,12 +593,46 @@ class ImageEditPromptGenerator:
                         def clean_reasoning_text(text):
                             if not isinstance(text, str):
                                 return text
+                            # Remove code block markers
                             text = re.sub(r'```json\s*', '', text)
                             text = re.sub(r'```\s*', '', text)
+
+                            # Check if the text contains nested JSON structure
+                            text_stripped = text.strip()
+                            if text_stripped.startswith('{') and ('"sample_id"' in text or '"reasoning_chains"' in text or "'sample_id'" in text):
+                                try:
+                                    nested_json = json.loads(text)
+                                    if isinstance(nested_json, dict) and 'reasoning_chains' in nested_json:
+                                        chains = nested_json.get('reasoning_chains', [])
+                                        if isinstance(chains, list) and len(chains) > 0:
+                                            for chain_obj in chains:
+                                                if isinstance(chain_obj, dict) and 'chain' in chain_obj:
+                                                    return clean_reasoning_text(chain_obj['chain'])
+                                    return ""
+                                except (json.JSONDecodeError, Exception):
+                                    match = re.search(r'"chain"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', text, re.DOTALL)
+                                    if match:
+                                        return match.group(1).replace('\\"', '"').replace('\\n', '\n')
+                                    lines = text.split('\n')
+                                    cleaned_lines = []
+                                    for line in lines:
+                                        stripped = line.strip()
+                                        if stripped in ['{', '}', '[', ']'] or (stripped.startswith('{') and not any(c in line for c in ['"', "'"])):
+                                            continue
+                                        if re.match(r'^\s*"[^"]+"\s*:', line):
+                                            continue
+                                        cleaned_lines.append(line)
+                                    result = '\n'.join(cleaned_lines).strip()
+                                    result = re.sub(r'^\s*[{\[\]}]\s*', '', result)
+                                    return result
+
                             lines = text.split('\n')
                             cleaned_lines = []
                             for line in lines:
-                                if line.strip().startswith('{') and not any(c in line for c in ['"', "'"]):
+                                stripped = line.strip()
+                                if stripped in ['{', '}', '[', ']'] or (stripped.startswith('{') and not any(c in line for c in ['"', "'"])):
+                                    continue
+                                if re.match(r'^\s*"[^"]+"\s*:', line):
                                     continue
                                 cleaned_lines.append(line)
                             return '\n'.join(cleaned_lines).strip()
@@ -556,12 +652,46 @@ class ImageEditPromptGenerator:
                         def clean_reasoning_text(text):
                             if not isinstance(text, str):
                                 return text
+                            # Remove code block markers
                             text = re.sub(r'```json\s*', '', text)
                             text = re.sub(r'```\s*', '', text)
+
+                            # Check if the text contains nested JSON structure
+                            text_stripped = text.strip()
+                            if text_stripped.startswith('{') and ('"sample_id"' in text or '"reasoning_chains"' in text or "'sample_id'" in text):
+                                try:
+                                    nested_json = json.loads(text)
+                                    if isinstance(nested_json, dict) and 'reasoning_chains' in nested_json:
+                                        chains = nested_json.get('reasoning_chains', [])
+                                        if isinstance(chains, list) and len(chains) > 0:
+                                            for chain_obj in chains:
+                                                if isinstance(chain_obj, dict) and 'chain' in chain_obj:
+                                                    return clean_reasoning_text(chain_obj['chain'])
+                                    return ""
+                                except (json.JSONDecodeError, Exception):
+                                    match = re.search(r'"chain"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', text, re.DOTALL)
+                                    if match:
+                                        return match.group(1).replace('\\"', '"').replace('\\n', '\n')
+                                    lines = text.split('\n')
+                                    cleaned_lines = []
+                                    for line in lines:
+                                        stripped = line.strip()
+                                        if stripped in ['{', '}', '[', ']'] or (stripped.startswith('{') and not any(c in line for c in ['"', "'"])):
+                                            continue
+                                        if re.match(r'^\s*"[^"]+"\s*:', line):
+                                            continue
+                                        cleaned_lines.append(line)
+                                    result = '\n'.join(cleaned_lines).strip()
+                                    result = re.sub(r'^\s*[{\[\]}]\s*', '', result)
+                                    return result
+
                             lines = text.split('\n')
                             cleaned_lines = []
                             for line in lines:
-                                if line.strip().startswith('{') and not any(c in line for c in ['"', "'"]):
+                                stripped = line.strip()
+                                if stripped in ['{', '}', '[', ']'] or (stripped.startswith('{') and not any(c in line for c in ['"', "'"])):
+                                    continue
+                                if re.match(r'^\s*"[^"]+"\s*:', line):
                                     continue
                                 cleaned_lines.append(line)
                             return '\n'.join(cleaned_lines).strip()
@@ -578,13 +708,13 @@ class ImageEditPromptGenerator:
                     counterfactual_premise = parsed.get('counterfactual_premise', {})
                     if isinstance(counterfactual_premise, dict):
                         result['counterfactual_premise'] = {
-                            'change': counterfactual_premise.get('change', ''),
+                            'aspect': counterfactual_premise.get('aspect', ''),
                             'from': counterfactual_premise.get('from', ''),
                             'to': counterfactual_premise.get('to', '')
                         }
                     else:
                         result['counterfactual_premise'] = {
-                            'change': '',
+                            'aspect': '',
                             'from': '',
                             'to': ''
                         }
@@ -670,26 +800,72 @@ class ImageEditPromptGenerator:
                         # Check if parsing was successful by checking key fields
                         # If error field exists, or critical fields are empty/missing, consider it a failure
                         has_error = 'error' in result
-                        has_empty_instruction = not result.get('instruction') or result.get('instruction') == edit_request
-                        reasoning_chains = result.get('reasoning_chains', [])
-                        has_empty_reasoning = not reasoning_chains or (isinstance(reasoning_chains, list) and not any(item.get('chain') for item in reasoning_chains if isinstance(item, dict)))
-                        counterfactual_premise = result.get('counterfactual_premise', {})
-                        has_empty_premise = not counterfactual_premise.get('change') or not counterfactual_premise.get('from') or not counterfactual_premise.get('to')
-                        has_empty_metadata = not result.get('edit_subject')
 
-                        # If all critical fields are populated, consider it successful
-                        if not has_error and not (has_empty_instruction and has_empty_reasoning and has_empty_premise and has_empty_metadata):
+                        # Check if instruction is properly rewritten (not just the original edit_request)
+                        instruction = result.get('instruction', '')
+                        has_empty_instruction = not instruction or instruction == edit_request
+
+                        # Check reasoning_chains: must have valid chains without nested JSON
+                        reasoning_chains = result.get('reasoning_chains', [])
+                        has_empty_reasoning = not reasoning_chains
+                        has_nested_json_in_chains = False
+                        if isinstance(reasoning_chains, list):
+                            for item in reasoning_chains:
+                                if isinstance(item, dict):
+                                    chain_text = item.get('chain', '')
+                                    # Check if chain contains nested JSON structure
+                                    if isinstance(chain_text, str) and chain_text.strip().startswith('{') and ('"sample_id"' in chain_text or '"reasoning_chains"' in chain_text):
+                                        has_nested_json_in_chains = True
+                                        break
+                                    if not chain_text or len(chain_text.strip()) < 10:  # Too short to be meaningful
+                                        has_empty_reasoning = True
+
+                        # Check counterfactual_premise
+                        counterfactual_premise = result.get('counterfactual_premise', {})
+                        has_empty_premise = not counterfactual_premise.get('aspect') or not counterfactual_premise.get('from') or not counterfactual_premise.get('to')
+
+                        # Check metadata fields
+                        has_empty_metadata = not result.get('edit_subject') or not result.get('edit_type') or not result.get('editing_instruction')
+
+                        # Determine if parsing was successful
+                        # Success requires: no error, proper instruction, valid reasoning chains (no nested JSON), complete premise, and metadata
+                        is_successful = (
+                            not has_error and
+                            not has_empty_instruction and
+                            not has_empty_reasoning and
+                            not has_nested_json_in_chains and
+                            not has_empty_premise and
+                            not has_empty_metadata
+                        )
+
+                        if is_successful:
                             # Success - break out of retry loop
                             break
                         else:
                             # Parsing likely failed or result is incomplete
+                            failure_reasons = []
+                            if has_error:
+                                failure_reasons.append("error field present")
+                            if has_empty_instruction:
+                                failure_reasons.append("instruction not rewritten")
+                            if has_empty_reasoning:
+                                failure_reasons.append("empty reasoning chains")
+                            if has_nested_json_in_chains:
+                                failure_reasons.append("nested JSON in chains")
+                            if has_empty_premise:
+                                failure_reasons.append("empty counterfactual premise")
+                            if has_empty_metadata:
+                                failure_reasons.append("empty metadata")
+
                             if retry_count < max_retries:
                                 retry_count += 1
-                                print(f"\n  Retry {retry_count}/{max_retries} for {sample_id} due to parsing issues...")
+                                reason_str = ", ".join(failure_reasons) if failure_reasons else "unknown"
+                                print(f"\n  Retry {retry_count}/{max_retries} for {sample_id} due to: {reason_str}")
                                 continue
                             else:
                                 # Max retries reached, use the result anyway
-                                print(f"\n  Max retries reached for {sample_id}, using partial result")
+                                reason_str = ", ".join(failure_reasons) if failure_reasons else "unknown"
+                                print(f"\n  Max retries reached for {sample_id}, using partial result (issues: {reason_str})")
                                 break
 
                     except Exception as e:
@@ -706,21 +882,13 @@ class ImageEditPromptGenerator:
                     result['sample_id'] = sample_id
                     # Note: image_path, image_mask_path, target_path, target_mask_path, and index are not included in the output
 
-                    results.append(result)
+                results.append(result)
 
-                    # Save individual file, using sample_id as filename
-                    if save_individual and output_json_path:
-                        output_json_file_individual = output_json_path / f"{sample_id}.json"
-                        with open(output_json_file_individual, 'w', encoding='utf-8') as f:
-                            json.dump(result, f, ensure_ascii=False, indent=2)
-                else:
-                    # Should not happen, but handle it
-                    print(f"\n  Failed to generate result for {sample_id} after {max_retries} retries")
-                    error_result = {
-                        'error': 'Failed after max retries',
-                        'sample_id': sample_id
-                    }
-                    results.append(error_result)
+                # Save individual file, using sample_id as filename
+                if save_individual and output_json_path and result:
+                    output_json_file_individual = output_json_path / f"{sample_id}.json"
+                    with open(output_json_file_individual, 'w', encoding='utf-8') as f:
+                        json.dump(result, f, ensure_ascii=False, indent=2)
 
             except Exception as e:
                 print(f"\nError processing sample {idx}: {e}")
