@@ -17,7 +17,7 @@
     }
   ],
   "counterfactual_premise": {
-    "change": "what_was_changed",
+    "aspect": "what_was_changed",
     "from": "original_state",
     "to": "new_state"
   },

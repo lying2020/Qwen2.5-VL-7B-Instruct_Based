@@ -21,9 +21,8 @@ import matplotlib.colors as colors
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # pretrained model path
-# INPAINTING_MODEL_PATH = "/home/liying/Documents/stable-diffusion-inpainting"
-INPAINTING_MODEL_PATH = "/home/liying/Desktop/stable-diffusion-inpainting"
-INPAINTING_2_MODEL_PATH = "/home/liying/Desktop/stable-diffusion-2-inpainting"
+INPAINTING_MODEL_PATH = "/home/liying/Documents/stable-diffusion-inpainting"
+INPAINTING_2_MODEL_PATH = "/home/liying/Documents/stable-diffusion-2-inpainting"
 
 STABLE_DIFFUSION_V1_5_MODEL_PATH = "/home/liying/Documents/stable-diffusion-v1-5"
 
