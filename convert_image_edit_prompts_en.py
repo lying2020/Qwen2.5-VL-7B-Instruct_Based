@@ -960,9 +960,9 @@ class ImageEditPromptGenerator:
             image_path = item.get('image_path') or item.get('image')
             edit_request = item.get('edit_request') or item.get('prompt') or item.get('instruction')
             # Support multiple mask path field names
-            image_mask_path = item.get('image_mask_path') or item.get('mask_path') or item.get('mask')
-            target_path = item.get('target_path') or item.get('target') or item.get('target_image')
-            target_mask_path = item.get('target_mask_path') or item.get('target_mask')
+            image_mask_path = item.get('image_mask_path') or item.get('mask_path') or item.get('mask', None)
+            target_path = item.get('target_path') or item.get('target') or item.get('target_image', None)
+            target_mask_path = item.get('target_mask_path') or item.get('target_mask', None)
 
             if not image_path or not edit_request:
                 continue
@@ -1036,8 +1036,16 @@ def main():
 
     # converted_data_json = os.path.join(prj.HALLUSEGBENCH_DATASET_PATH, "converted_data.json")
     # prompts_output_dir = prj.PROMPTS_OUTPUT_DIR
-    converted_data_json = os.path.join(prj.HALLUSEGGOOD_DATASET_PATH, "halluseggood_data.json")
-    prompts_output_dir = prj.PROMPTS_OUTPUT_HALLUSEGGOOD_DIR
+
+    # converted_data_json = os.path.join(prj.HALLUSEGGOOD_DATASET_PATH, "halluseggood_data.json")
+    # prompts_output_dir = prj.PROMPTS_OUTPUT_HALLUSEGGOOD_DIR
+
+
+
+    images_dir = prj.EditBench_DATASET_PATH
+    converted_data_json = os.path.join(prj.EditBench_DATASET_PATH, "converted_data.json")
+    prompts_output_dir = prj.PROMPTS_OUTPUT_EDITBENCH_DIR
+
 
     parser = argparse.ArgumentParser(description='Generate image editing prompts')
 
