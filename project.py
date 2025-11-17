@@ -46,6 +46,11 @@ PROMPTS_OUTPUT_EDITBENCHGOOD_DIR = os.path.join(EditBenchGood_DATASET_PATH, "pro
 os.makedirs(PROMPTS_OUTPUT_EDITBENCHGOOD_DIR, exist_ok=True)
 
 
+WebPictureGood_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/dataset/WebPictureGood"
+PROMPTS_OUTPUT_WEBPICUREGOOD_DIR = os.path.join(WebPictureGood_DATASET_PATH, "prompts_output_v1")
+os.makedirs(PROMPTS_OUTPUT_WEBPICUREGOOD_DIR, exist_ok=True)
+
+
 # dataset path
 CHECKPOINTS_DIR = os.path.join(current_dir, "checkpoints")
 os.makedirs(CHECKPOINTS_DIR, exist_ok=True)
