@@ -28,25 +28,25 @@ STABLE_DIFFUSION_V1_5_MODEL_PATH = "/home/liying/Documents/stable-diffusion-v1-5
 
 QWEN2_5_VL_7B_INSTUCT_MODEL_PATH = "/home/liying/Documents/Qwen2.5-VL-7B-Instruct"
 
-HALLUSEGBENCH_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/HalluSegBench/HalluSegBench"
+HALLUSEGBENCH_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/images/HalluSegBench/HalluSegBench"
 PROMPTS_OUTPUT_DIR = os.path.join(HALLUSEGBENCH_DATASET_PATH, "prompts_output_new")
 os.makedirs(PROMPTS_OUTPUT_DIR, exist_ok=True)
 
 
-HALLUSEGGOOD_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/dataset/HalluSegGood"
+HALLUSEGGOOD_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/images/dataset/HalluSegGood"
 PROMPTS_OUTPUT_HALLUSEGGOOD_DIR = os.path.join(HALLUSEGGOOD_DATASET_PATH, "prompts_output_v1")
 os.makedirs(PROMPTS_OUTPUT_HALLUSEGGOOD_DIR, exist_ok=True)
 
-EditBench_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/dataset/EditBench"
+EditBench_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/images/dataset/EditBench"
 PROMPTS_OUTPUT_EDITBENCH_DIR = os.path.join(EditBench_DATASET_PATH, "prompts_output_new")
 os.makedirs(PROMPTS_OUTPUT_EDITBENCH_DIR, exist_ok=True)
 
-EditBenchGood_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/dataset/EditBenchGood"
+EditBenchGood_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/images/dataset/EditBenchGood"
 PROMPTS_OUTPUT_EDITBENCHGOOD_DIR = os.path.join(EditBenchGood_DATASET_PATH, "prompts_output_v1")
 os.makedirs(PROMPTS_OUTPUT_EDITBENCHGOOD_DIR, exist_ok=True)
 
 
-WebPictureGood_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/Qwen2.5-VL-7B-Instruct_Based/dataset/WebPictureGood"
+WebPictureGood_DATASET_PATH = "/home/liying/Desktop/IMAGE_EDITE-CVPR-2025/images/dataset/WebPictureGood"
 PROMPTS_OUTPUT_WEBPICUREGOOD_DIR = os.path.join(WebPictureGood_DATASET_PATH, "prompts_output_v1")
 os.makedirs(PROMPTS_OUTPUT_WEBPICUREGOOD_DIR, exist_ok=True)
 
